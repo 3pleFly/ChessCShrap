@@ -1,0 +1,7 @@
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\obj\Debug\ChessRewrite2.csproj.AssemblyReference.cache
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\obj\Debug\ChessRewrite2.csproj.SuggestedBindingRedirects.cache
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\obj\Debug\ChessRewrite2.csproj.CoreCompileInputs.cache
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\bin\Debug\ChessRewrite2.exe
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\bin\Debug\ChessRewrite2.pdb
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\obj\Debug\ChessRewrite2.exe
+C:\Users\PC\RiderProjects\ChessRewrite2\ChessRewrite2\obj\Debug\ChessRewrite2.pdb
