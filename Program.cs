@@ -1040,29 +1040,6 @@ namespace ChessRewrite2
         {
             return this.firstMove;
         }
-
-        // public bool IsMoveSelfMadeCheckMate(Location destination, Piece[,] pieces, bool isWhitesTurn)
-        // {
-        //     for (int i = 0; i < pieces.GetLength(0); i++)
-        //     {
-        //         for (int j = 0; j < pieces.GetLength(1); j++)
-        //         {
-        //             Move moveToKing = new Move(new Location(i, j), destination);
-        //             Piece currentPiece = pieces[i, j];
-        //             if (currentPiece.IsWhite() != isWhite)
-        //             {
-        //                 if (currentPiece.IsLegalMove(moveToKing, pieces, isWhitesTurn) &&
-        //                     !moveToKing.getStarting().Equals(destination))
-        //                 {
-        //                     return true;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //
-        //     return false;
-        // }
-
         public override void Move(Move move, Piece[,] pieces)
         {
             if (IsMoveCastling(move, pieces, isWhite))
