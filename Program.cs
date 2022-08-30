@@ -782,11 +782,6 @@ namespace ChessRewrite2
             this.firstMove = firstMove;
         }
 
-        public override Piece Clone()
-        {
-            return new Pawn(isWhite, firstMove);
-        }
-
         public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
             if (!base.IsLegalMove(move, pieces, isWhitesTurn))
@@ -795,16 +790,21 @@ namespace ChessRewrite2
             }
 
             Location locationDifference = move.GetLocationDifference();
-            locationDifference.setRank(Math.Abs(locationDifference.GetRank()));
-            locationDifference.setFile(Math.Abs(locationDifference.GetFile()));
-            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 0 ||
-                (locationDifference.GetRank() == 2 && locationDifference.GetFile() == 0 && firstMove))
+            if ((locationDifference.GetRank() == 1 && isWhitesTurn ||
+                 locationDifference.GetRank() == -1 && !isWhitesTurn) &&
+                locationDifference.GetFile() == 0)
             {
                 return true;
             }
-
+            if ((locationDifference.GetRank() == 2 && isWhitesTurn ||
+                 locationDifference.GetRank() == -2 && !isWhitesTurn) &&
+                locationDifference.GetFile() == 0 && firstMove)
+            {
+                return true;
+            }
+            
             Piece occupyingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
-            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 1)
+            if (Math.Abs(locationDifference.GetRank()) == 1 && Math.Abs(locationDifference.GetFile()) == 1)
             {
                 if (!(occupyingPiece is EmptyPiece))
                 {
@@ -817,6 +817,11 @@ namespace ChessRewrite2
             }
 
             return false;
+        }
+
+        public override Piece Clone()
+        {
+            return new Pawn(isWhite, firstMove);
         }
 
         public override void Move(Move move, Piece[,] pieces)
