@@ -36,13 +36,13 @@ namespace ChessRewrite2
             {
                 board.PrintBoard();
                 Move move = GetValidUserInput(isWhitesTurn);
-                if (board.TryMove(move, isWhitesTurn, boardHistory))
+                if (board.TryMove(move, isWhitesTurn))
                 {
-                    board.NextMove(move, isWhitesTurn, boardHistory);
-                    if (board.GetIsInCheck(isWhitesTurn,boardHistory))
+                    board.NextMove(move, isWhitesTurn);
+                    if (board.GetIsInCheck(isWhitesTurn))
                     {
                         Console.WriteLine("CHECK");
-                        if (!board.KingHasLegalMoves(isWhitesTurn,boardHistory))
+                        if (!board.KingHasLegalMoves(isWhitesTurn))
                         {
                             checkmate = true;
                         }
@@ -92,7 +92,7 @@ namespace ChessRewrite2
             }
         }
 
-        private Board[] CloneBoardArray(Board[] boards)
+        public Board[] CloneBoardArray(Board[] boards)
         {
             Board[] boardsCopy = new Board[boards.Length];
             for (int i = 0; i < boards.Length; i++)
@@ -105,7 +105,7 @@ namespace ChessRewrite2
 
         private bool IsStalemate()
         {
-            if (!board.KingHasLegalMoves(isWhitesTurn, boardHistory) && !board.CanAnyPieceMove(!isWhitesTurn,boardHistory))
+            if (!board.KingHasLegalMoves(isWhitesTurn) && !board.CanAnyPieceMove(!isWhitesTurn))
             {
                 return true;
             }
@@ -186,7 +186,7 @@ namespace ChessRewrite2
             this.pieces = InitializePieces();
         }
 
-        private Board(Piece[,] pieces)
+        public Board(Piece[,] pieces)
         {
             this.pieces = pieces;
         }
@@ -197,7 +197,7 @@ namespace ChessRewrite2
             return new Board(piecesCopy);
         }
 
-        public bool KingHasLegalMoves(bool isWhitesTurn, Board[] boardHistory)
+        public bool KingHasLegalMoves(bool isWhitesTurn)
         {
             Location kingLocation = GetKingLocation(pieces, !isWhitesTurn);
             King king = (King)pieces[kingLocation.GetRank(), kingLocation.GetFile()];
@@ -209,7 +209,7 @@ namespace ChessRewrite2
                 Move possibleMove = new Move(kingLocation, possibleLocation);
                 if (possibleLocationPiece is EmptyPiece || possibleLocationPiece.IsWhite() != king.IsWhite())
                 {
-                    if (IsAnyPieceThreateningLocation(possibleMove.getEnding(), isWhitesTurn, boardHistory))
+                    if (IsAnyPieceThreateningLocation(possibleMove.getEnding(), isWhitesTurn))
                     {
                         return true;
                     }
@@ -219,7 +219,7 @@ namespace ChessRewrite2
             return false;
         }
 
-        public bool CanAnyPieceMove(bool isWhitesTurn, Board[] boardHistory)
+        public bool CanAnyPieceMove(bool isWhitesTurn)
         {
             for (int i = 0; i < pieces.GetLength(0); i++)
             {
@@ -235,7 +235,7 @@ namespace ChessRewrite2
                             {
                                 Location potentialLocation = new Location(k, l);
                                 Move move = new Move(startingLocation, potentialLocation);
-                                if (piece.IsLegalMove(move, pieces, isWhitesTurn, boardHistory))
+                                if (piece.IsLegalMove(move, pieces, isWhitesTurn))
                                 {
                                     return true;
                                 }
@@ -283,22 +283,22 @@ namespace ChessRewrite2
             }
         }
 
-        public bool GetIsInCheck(bool isWhitesTurn, Board[] boardHistory)
+        public bool GetIsInCheck(bool isWhitesTurn)
         {
-            return IsAnyPieceThreateningLocation(GetKingLocation(pieces, !isWhitesTurn), !isWhitesTurn, boardHistory);
+            return IsAnyPieceThreateningLocation(GetKingLocation(pieces, !isWhitesTurn), !isWhitesTurn);
         }
 
-        public void NextMove(Move move, bool isWhitesTurn, Board[] boardHistory)
+        public void NextMove(Move move, bool isWhitesTurn)
         {
-            this.pieces[move.getStarting().GetRank(), move.getStarting().GetFile()].Move(move, this.pieces, boardHistory);
+            this.pieces[move.getStarting().GetRank(), move.getStarting().GetFile()].Move(move, this.pieces);
         }
 
-        public bool TryMove(Move move, bool isWhitesTurn, Board[] boardHistory)
+        public bool TryMove(Move move, bool isWhitesTurn)
         {
             int rank = move.getStarting().GetRank();
             int file = move.getStarting().GetFile();
-            return this.pieces[rank, file].IsLegalMove(move, this.pieces, isWhitesTurn, boardHistory) &&
-                   !IsPieceSuspended(move, isWhitesTurn, boardHistory);
+            return this.pieces[rank, file].IsLegalMove(move, this.pieces, isWhitesTurn) &&
+                   !IsPieceSuspended(move, isWhitesTurn);
         }
 
         private Piece[,] ClonePieceArray()
@@ -315,7 +315,7 @@ namespace ChessRewrite2
             return piecesCopy;
         }
 
-        private bool IsAnyPieceThreateningLocation(Location location, bool isWhitesTurn, Board[] boardHistory)
+        private bool IsAnyPieceThreateningLocation(Location location, bool isWhitesTurn)
         {
             for (int i = 0; i < pieces.GetLength(0); i++)
             {
@@ -327,7 +327,7 @@ namespace ChessRewrite2
                     {
                         if (piece.IsWhite() != isWhitesTurn)
                         {
-                            if (piece.IsLegalMove(move, pieces, !isWhitesTurn, boardHistory))
+                            if (piece.IsLegalMove(move, pieces, !isWhitesTurn))
                             {
                                 return true;
                             }
@@ -354,20 +354,20 @@ namespace ChessRewrite2
             return null;
         }
 
-        private bool IsPieceSuspended(Move move, bool isWhitesTurn, Board[] boardHistory)
+        private bool IsPieceSuspended(Move move, bool isWhitesTurn)
         {
             Piece[,] preMovePieces = ClonePieceArray();
             if (IsMoveCastling(move))
             {
-                return IsCastlingIllegal(move, isWhitesTurn, boardHistory);
+                return IsCastlingIllegal(move, isWhitesTurn);
             }
-            NextMove(move, isWhitesTurn, boardHistory);
-            bool isSuspended = IsAnyPieceThreateningLocation(GetKingLocation(pieces, isWhitesTurn), isWhitesTurn, boardHistory);
+            NextMove(move, isWhitesTurn);
+            bool isSuspended = IsAnyPieceThreateningLocation(GetKingLocation(pieces, isWhitesTurn), isWhitesTurn);
             pieces = preMovePieces;
             return isSuspended;
         }
 
-        private bool IsCastlingIllegal(Move move, bool isWhitesTurn, Board[] boardHistory)
+        private bool IsCastlingIllegal(Move move, bool isWhitesTurn)
         {
             Location locationDifference = move.GetLocationDifference();
             int rookIndex = locationDifference.GetFile() < 0 ? 7 : 0;
@@ -377,7 +377,7 @@ namespace ChessRewrite2
                 i = locationDifference.GetFile() < 0 ? i + 1 : i - 1;
                 if (i == 4 || i == 7 || i == 0 || pieces[move.getStarting().GetRank(), i] is EmptyPiece)
                 {
-                    if (IsAnyPieceThreateningLocation(new Location(move.getStarting().GetRank(), i), isWhitesTurn, boardHistory))
+                    if (IsAnyPieceThreateningLocation(new Location(move.getStarting().GetRank(), i), isWhitesTurn))
                     {
                         return true;
                     }
@@ -703,7 +703,7 @@ namespace ChessRewrite2
             return currentLocation;
         }
 
-        public virtual bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public virtual bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
             Piece startingPiece = pieces[move.getStarting().GetRank(), move.getStarting().GetFile()];
             Piece endingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
@@ -745,7 +745,7 @@ namespace ChessRewrite2
             return false;
         }
 
-        public virtual void Move(Move move, Piece[,] pieces, Board[] boardHistory)
+        public virtual void Move(Move move, Piece[,] pieces)
         {
             Piece currentPiece = pieces[move.getStarting().GetRank(), move.getStarting().GetFile()];
             pieces[move.getEnding().GetRank(), move.getEnding().GetFile()] = currentPiece.Clone();
@@ -782,29 +782,29 @@ namespace ChessRewrite2
             this.firstMove = firstMove;
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override Piece Clone()
         {
-            if (!base.IsLegalMove(move, pieces, isWhitesTurn, boardHistory))
+            return new Pawn(isWhite, firstMove);
+        }
+
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
+        {
+            if (!base.IsLegalMove(move, pieces, isWhitesTurn))
             {
                 return false;
             }
 
             Location locationDifference = move.GetLocationDifference();
-            if ((locationDifference.GetRank() == 1 && isWhitesTurn ||
-                 locationDifference.GetRank() == -1 && !isWhitesTurn) &&
-                locationDifference.GetFile() == 0)
+            locationDifference.setRank(Math.Abs(locationDifference.GetRank()));
+            locationDifference.setFile(Math.Abs(locationDifference.GetFile()));
+            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 0 ||
+                (locationDifference.GetRank() == 2 && locationDifference.GetFile() == 0 && firstMove))
             {
                 return true;
             }
-            if ((locationDifference.GetRank() == 2 && isWhitesTurn ||
-                 locationDifference.GetRank() == -2 && !isWhitesTurn) &&
-                locationDifference.GetFile() == 0 && firstMove)
-            {
-                return true;
-            }
-            
+
             Piece occupyingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
-            if (Math.Abs(locationDifference.GetRank()) == 1 && Math.Abs(locationDifference.GetFile()) == 1)
+            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 1)
             {
                 if (!(occupyingPiece is EmptyPiece))
                 {
@@ -813,22 +813,16 @@ namespace ChessRewrite2
                 // enpassant
                 else
                 {
-                    return true;
                 }
             }
 
             return false;
         }
 
-        public override Piece Clone()
-        {
-            return new Pawn(isWhite, firstMove);
-        }
-
-        public override void Move(Move move, Piece[,] pieces, Board[] boardHistory)
+        public override void Move(Move move, Piece[,] pieces)
         {
             this.firstMove = false;
-            base.Move(move, pieces, boardHistory);
+            base.Move(move, pieces);
         }
 
         public override bool IsWhite()
@@ -863,9 +857,9 @@ namespace ChessRewrite2
             return new Rook(isWhite, firstMove);
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
-            return base.IsLegalMove(move, pieces, isWhitesTurn,boardHistory) && IsMoveValidDirection(move) &&
+            return base.IsLegalMove(move, pieces, isWhitesTurn) && IsMoveValidDirection(move) &&
                    !IsPieceBlockedIn(move, pieces);
         }
 
@@ -889,10 +883,10 @@ namespace ChessRewrite2
         {
             this.firstMove = value;
         }
-        public override void Move(Move move, Piece[,] pieces, Board[] boardHistory)
+        public override void Move(Move move, Piece[,] pieces)
         {
             this.firstMove = false;
-            base.Move(move, pieces, boardHistory);
+            base.Move(move, pieces);
         }
 
         public override bool IsWhite()
@@ -920,9 +914,9 @@ namespace ChessRewrite2
             return new Bishop(isWhite);
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
-            return base.IsLegalMove(move, pieces, isWhitesTurn, boardHistory) && IsMoveValidDirection(move) &&
+            return base.IsLegalMove(move, pieces, isWhitesTurn) && IsMoveValidDirection(move) &&
                    !IsPieceBlockedIn(move, pieces);
         }
 
@@ -962,9 +956,9 @@ namespace ChessRewrite2
             return new Knight(isWhite);
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
-            if (!base.IsLegalMove(move, pieces, isWhitesTurn, boardHistory))
+            if (!base.IsLegalMove(move, pieces, isWhitesTurn))
             {
                 return false;
             }
@@ -1006,12 +1000,12 @@ namespace ChessRewrite2
             return new Queen(isWhite);
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
             Rook rookAsQueen = new Rook(isWhite);
             Bishop bishopAsQueen = new Bishop(isWhite);
-            return bishopAsQueen.IsLegalMove(move, pieces, isWhitesTurn, boardHistory) ||
-                   rookAsQueen.IsLegalMove(move, pieces, isWhitesTurn, boardHistory);
+            return bishopAsQueen.IsLegalMove(move, pieces, isWhitesTurn) ||
+                   rookAsQueen.IsLegalMove(move, pieces, isWhitesTurn);
         }
 
         public override bool IsWhite()
@@ -1046,29 +1040,30 @@ namespace ChessRewrite2
             return new King(isWhite, firstMove);
         }
 
-        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn, Board[] boardHistory)
+        public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
             if (IsMoveCastling(move, pieces, isWhitesTurn))
             {
-                if (!base.IsLegalMove(move, pieces, isWhitesTurn, boardHistory))
+                if (!base.IsLegalMove(move, pieces, isWhitesTurn))
                 {
                     return false;
                 }
                 return true;
             }
 
-            return  IsMoveValidDirection(move) && base.IsLegalMove(move, pieces, isWhitesTurn, boardHistory);
+            return  IsMoveValidDirection(move) && base.IsLegalMove(move, pieces, isWhitesTurn);
         }
 
         public bool IsFirstTurn()
         {
             return this.firstMove;
         }
-        public override void Move(Move move, Piece[,] pieces, Board[] boardHistory)
+        public override void Move(Move move, Piece[,] pieces)
         {
             if (IsMoveCastling(move, pieces, isWhite))
             {
                 this.firstMove = false;
+                Location locationDifference = move.GetLocationDifference();
                 int rookLocationIndex = move.getEnding().GetFile() > 4 ? 7 : 0;
                 int rookNewLocationIndex = rookLocationIndex > 4 ? 5 : 3;
                 Rook rook = (Rook) pieces[move.getStarting().GetRank(), rookLocationIndex];
@@ -1081,7 +1076,7 @@ namespace ChessRewrite2
             else
             {
                 this.firstMove = false;
-                base.Move(move, pieces, boardHistory);
+                base.Move(move, pieces);
             }
         }
 
