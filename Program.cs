@@ -434,7 +434,7 @@ namespace ChessRewrite2
                 return IsCastlingIllegal(move, isWhitesTurn);
             }
 
-            if (IsMoveEnPassant(move))
+            if (IsMoveEnPassant(move, isWhitesTurn))
             {
                 enpassant = true;
                 return !IsPieceSuspended(move, isWhitesTurn);
@@ -455,10 +455,15 @@ namespace ChessRewrite2
             pieces[isWhitesTurn ? move.getEnding().GetRank() + 1 : move.getEnding().GetRank() - 1 ,
                 move.getEnding().GetFile()] = new EmptyPiece();
         }
-        private bool IsMoveEnPassant(Move move)
+        private bool IsMoveEnPassant(Move move, bool isWhitesTurn)
         {
+            Piece piece = pieces[move.getStarting().GetRank(), move.getStarting().GetFile()];
             Log lastMoveLog = log.RetrieveLastLog();
-            if (lastMoveLog != null && lastMoveLog.GetPiece() is Pawn && ((Pawn)lastMoveLog.GetPiece()).IsFirstMove())
+            if (lastMoveLog == null || lastMoveLog.GetPiece().IsWhite() == piece.IsWhite())
+            {
+                return false;
+            }
+            if (lastMoveLog.GetPiece() is Pawn && ((Pawn)lastMoveLog.GetPiece()).IsFirstMove())
             {
                 Move lastMove = lastMoveLog.GetMove();
                 if (lastMove.getEnding().GetFile() == move.getEnding().GetFile() && 
@@ -954,33 +959,31 @@ namespace ChessRewrite2
         }
         public override bool IsLegalMove(Move move, Piece[,] pieces, bool isWhitesTurn)
         {
-            if (!base.IsLegalMove(move, pieces, isWhitesTurn))
-            {
-                return false;
-            }
+            return base.IsLegalMove(move, pieces, isWhitesTurn) && IsMoveValidDirection(move, pieces, isWhitesTurn);
+        }
 
+        private bool IsMoveValidDirection(Move move, Piece[,] pieces, bool isWhitesTurn)
+        {
             Location locationDifference = move.GetLocationDifference();
-            locationDifference.setRank(Math.Abs(locationDifference.GetRank()));
-            locationDifference.setFile(Math.Abs(locationDifference.GetFile()));
-            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 0 ||
-                (locationDifference.GetRank() == 2 && locationDifference.GetFile() == 0 && firstMove))
+            if ((locationDifference.GetRank() == 1 && isWhitesTurn ||
+                 locationDifference.GetRank() == -1 && !isWhitesTurn) &&
+                locationDifference.GetFile() == 0)
             {
                 return true;
             }
-
-            Piece occupyingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
-            if (locationDifference.GetRank() == 1 && locationDifference.GetFile() == 1)
+            if ((locationDifference.GetRank() == 2 && isWhitesTurn ||
+                 locationDifference.GetRank() == -2 && !isWhitesTurn) &&
+                locationDifference.GetFile() == 0 && firstMove)
             {
-                if (!(occupyingPiece is EmptyPiece))
-                {
-                    return true;
-                }
-                // enpassant
-                else
-                {
-                }
+                return true;
             }
-
+            
+            Piece occupyingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
+            if ((Math.Abs(locationDifference.GetRank()) == 1 && Math.Abs(locationDifference.GetFile()) == 1) &&
+                !(occupyingPiece is EmptyPiece))
+            {
+                return true;
+            }
             return false;
         }
 
@@ -1086,7 +1089,7 @@ namespace ChessRewrite2
                    !IsPieceBlockedIn(move, pieces);
         }
 
-        public bool IsMoveValidDirection(Move move)
+        private bool IsMoveValidDirection(Move move)
         {
             if (Math.Abs(move.getEnding().GetRank() - move.getStarting().GetRank()) ==
                 Math.Abs(move.getStarting().GetFile() - move.getEnding().GetFile()))
