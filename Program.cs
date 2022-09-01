@@ -12,27 +12,37 @@ namespace ChessRewrite2
     {
         public static void Main(string[] args)
         {
-            new ChessGame().play();
+            ChessGame.getInstance().play();
         }
     }
 
     class ChessGame
     {
+        private static ChessGame chessGameInstance;
         private Board board;
         private Board[] boardHistory;
         private bool isWhitesTurn;
         private bool check;
         //TODO
         //3 fold, 50 moves, voluntary, dead position
-
-
-        public ChessGame()
+        
+        private ChessGame()
         {
             board = new Board();
             boardHistory = new Board[50];
             isWhitesTurn = true;
             check = false;
-        }   
+        }
+
+        public static ChessGame getInstance()
+        {
+            if (chessGameInstance == null)
+            {
+                chessGameInstance = new ChessGame();
+                return chessGameInstance;
+            }
+            return chessGameInstance;
+        }
         
         public void play()
         {
@@ -99,25 +109,30 @@ namespace ChessRewrite2
 
         private bool IsCheckmate(bool check)
         {
-            Board copy = board.Clone();
-            board.TryEatThreateningPiece(isWhitesTurn);
-            if (check && !board.KingHasLegalMoves(isWhitesTurn))
+            if (check)
             {
+                Board copy = board.Clone();
+                board.TryEatThreateningPiece(isWhitesTurn);
+                if (!board.KingHasLegalMoves(isWhitesTurn))
+                {
+                    board = copy;
+                    return true;
+                }
                 board = copy;
-                return true;
             }
-
-            board = copy;
             return false;
         }
 
         private bool IsStalemate()
         {
+            Board copy = board.Clone();
+            board.TryEatThreateningPiece(isWhitesTurn);
             if (!board.KingHasLegalMoves(isWhitesTurn) && !board.CanAnyPieceMove(!isWhitesTurn))
             {
+                board = copy;
                 return true;
             }
-
+            board = copy;
             //threefold
 
 
@@ -267,25 +282,28 @@ namespace ChessRewrite2
     {
         private Piece[,] pieces;
         private Log log;
-        private bool enpassant = false;
-        private bool castling = false;
+        private bool enpassant;
+        private bool castling;
 
         public Board()
         {
             log = new Log();
+            castling = false;
+            enpassant = false;
             this.pieces = InitializePieces();
         }
 
-        private Board(Piece[,] pieces)
+        private Board(Piece[,] pieces, Log log, bool enpassant, bool castling)
         {
             this.pieces = pieces;
+            this.log = log;
+            this.enpassant = enpassant;
+            this.castling = castling;
         }
-
         public Board Clone()
         {
             Piece[,] piecesCopy = ClonePieceArray();
-
-            return new Board(piecesCopy);
+            return new Board(piecesCopy, log, enpassant, castling);
         }
 
         public void TryEatThreateningPiece(bool isWhitesTurn)
@@ -301,8 +319,7 @@ namespace ChessRewrite2
                 for (int j = 0; j < this.pieces.GetLength(1); j++)
                 {
                     if (this.pieces[i, j].IsLegalMove(new Move(new Location(i, j), threateningLocation), this.pieces,
-                            isWhitesTurn) 
-                        && !IsPieceSuspended(new Move(new Location(i, j), threateningLocation), isWhitesTurn))
+                            isWhitesTurn))
                     {
                         this.pieces[i, j].Move(new Move(new Location(i, j), threateningLocation), pieces);
                         return;
@@ -313,15 +330,15 @@ namespace ChessRewrite2
 
         public bool KingHasLegalMoves(bool isWhitesTurn)
         {
-            Location kingLocation = GetKingLocation(pieces, !isWhitesTurn);
+            Location kingLocation = GetKingLocation(pieces, isWhitesTurn);
             King king = (King)pieces[kingLocation.GetRank(), kingLocation.GetFile()];
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 9; i++)
             {
                 Location possibleLocation = kingLocation.Clone();
                 GetPossibleKingMoves(possibleLocation, i);
                 Piece possibleLocationPiece = pieces[possibleLocation.GetRank(), possibleLocation.GetFile()];
                 Move possibleMove = new Move(kingLocation, possibleLocation);
-                if (possibleLocationPiece is EmptyPiece || possibleLocationPiece.IsWhite() != king.IsWhite())
+                if (possibleLocationPiece is EmptyPiece || possibleLocationPiece.IsWhite() != king.IsWhite() || possibleLocation.Equals(kingLocation))
                 {
                     if (!IsAnyPieceThreateningLocation(possibleMove.getEnding(), isWhitesTurn))
                     {
@@ -393,6 +410,8 @@ namespace ChessRewrite2
                 case 7:
                     kingLocation.TraverseUp();
                     kingLocation.TraverseLeft();
+                    break;
+                case 8:
                     break;
             }
         }
