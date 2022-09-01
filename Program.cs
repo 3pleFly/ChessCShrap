@@ -18,16 +18,22 @@ namespace ChessRewrite2
 
     class ChessGame
     {
-        private Board board = new Board();
-        private Board[] boardHistory = new Board[50];
-        private bool isWhitesTurn = true;
-        private bool check = false;
-
+        private Board board;
+        private Board[] boardHistory;
+        private bool isWhitesTurn;
+        private bool check;
         //TODO
-        // castling, enpassant
         //3 fold, 50 moves, voluntary, dead position
-        //can change IsAnyPieceThreateningLocation inside 'ChessGame' merge with 'King's' SelfMadeCheckmate() somehow.....
 
+
+        public ChessGame()
+        {
+            board = new Board();
+            boardHistory = new Board[50];
+            isWhitesTurn = true;
+            check = false;
+        }   
+        
         public void play()
         {
             while (!IsCheckmate(check) && !IsStalemate())
@@ -80,7 +86,7 @@ namespace ChessRewrite2
             }
         }
 
-        public Board[] CloneBoardArray(Board[] boards)
+        private Board[] CloneBoardArray(Board[] boards)
         {
             Board[] boardsCopy = new Board[boards.Length];
             for (int i = 0; i < boards.Length; i++)
@@ -93,11 +99,15 @@ namespace ChessRewrite2
 
         private bool IsCheckmate(bool check)
         {
+            Board copy = board.Clone();
+            board.TryEatThreateningPiece(isWhitesTurn);
             if (check && !board.KingHasLegalMoves(isWhitesTurn))
             {
+                board = copy;
                 return true;
             }
 
+            board = copy;
             return false;
         }
 
@@ -274,7 +284,31 @@ namespace ChessRewrite2
         public Board Clone()
         {
             Piece[,] piecesCopy = ClonePieceArray();
+
             return new Board(piecesCopy);
+        }
+
+        public void TryEatThreateningPiece(bool isWhitesTurn)
+        {
+            Log lastLog = log.RetrieveLastLog();
+            if (lastLog == null)
+            {
+                return;
+            }
+            Location threateningLocation = lastLog.GetMove().getEnding();
+            for (int i = 0; i < this.pieces.GetLength(0); i++)
+            {
+                for (int j = 0; j < this.pieces.GetLength(1); j++)
+                {
+                    if (this.pieces[i, j].IsLegalMove(new Move(new Location(i, j), threateningLocation), this.pieces,
+                            isWhitesTurn) 
+                        && !IsPieceSuspended(new Move(new Location(i, j), threateningLocation), isWhitesTurn))
+                    {
+                        this.pieces[i, j].Move(new Move(new Location(i, j), threateningLocation), pieces);
+                        return;
+                    }
+                }
+            }
         }
 
         public bool KingHasLegalMoves(bool isWhitesTurn)
@@ -289,7 +323,7 @@ namespace ChessRewrite2
                 Move possibleMove = new Move(kingLocation, possibleLocation);
                 if (possibleLocationPiece is EmptyPiece || possibleLocationPiece.IsWhite() != king.IsWhite())
                 {
-                    if (IsAnyPieceThreateningLocation(possibleMove.getEnding(), isWhitesTurn))
+                    if (!IsAnyPieceThreateningLocation(possibleMove.getEnding(), isWhitesTurn))
                     {
                         return true;
                     }
@@ -327,7 +361,6 @@ namespace ChessRewrite2
 
             return false;
         }
-
 
         private void GetPossibleKingMoves(Location kingLocation, int index)
         {
@@ -581,12 +614,12 @@ namespace ChessRewrite2
                     new King(false), new EmptyPiece(), new EmptyPiece(), new Rook(false),
                 },
                 {
-                    new Pawn(false), new Pawn(false), new Pawn(false), new Pawn(false),
+                    new Pawn(false), new Pawn(false), new Queen(true), new EmptyPiece(),
                     new Pawn(false), new Pawn(false), new Pawn(false), new Pawn(false),
                 },
                 {
-                    new EmptyPiece(), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
-                    new EmptyPiece(), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
+                    new Rook(false), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
+                    new Knight(true), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
                 },
                 {
                     new EmptyPiece(), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
