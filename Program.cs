@@ -32,6 +32,7 @@ namespace ChessRewrite2
         {
             board = new Board();
             boardHistory = new Board[50];
+            boardHistory[0] = board.Clone();
             isWhitesTurn = true;
             check = false;
         }
@@ -95,6 +96,7 @@ namespace ChessRewrite2
                 if (boardHistory[i] == null)
                 {
                     boardHistory[i] = board.Clone();
+                    return;
                 }
             }
         }
@@ -128,7 +130,10 @@ namespace ChessRewrite2
             }
 
             //threefold
-
+            if (board.IsThreeFold(boardHistory, isWhitesTurn))
+            {
+                return true;
+            }
 
             //50moves
 
@@ -209,10 +214,32 @@ namespace ChessRewrite2
             this.move = move;
         }
 
+        private Log(Log[] moveHistory)
+        {
+            this.moveHistory = moveHistory;
+        }
+
         public Log()
         {
             this.moveHistory = new Log[50];
             this.countOfMoves = 0;
+        }
+
+        public Log Clone()
+        {
+            return new Log(CloneHistory());
+        }
+
+        private Log[] CloneHistory()
+        {
+            Log[] copy = new Log[moveHistory.Length];
+            for (int i = 0; i < moveHistory.Length && moveHistory[i] != null; i++)
+            {
+                copy[i] = new Log(moveHistory[i].isWhitesTurn, moveHistory[i].piece.Clone(),
+                    moveHistory[i].move.Clone(), moveHistory[i].countOfMoves);
+            }
+
+            return copy;
         }
 
         private void ExpandHistory()
@@ -295,6 +322,59 @@ namespace ChessRewrite2
             this.castling = castling;
         }
 
+        public Piece[,] GetPieces()
+        {
+            return this.pieces;
+        }
+
+        public bool IsThreeFold(Board[] boardsHistory, bool isWhitesTurn)
+        {
+            for (int i = 0; i < boardsHistory.Length - 1 && boardsHistory[i] != null; i++)
+            {
+                int repeatingBoards = 1;
+                Piece[,] firstPieces = boardsHistory[i].GetPieces();
+                for (int j = i + 1; j < boardsHistory.Length && boardsHistory[j] != null; j++)
+                {
+                    Piece[,] secondPieces = boardsHistory[j].GetPieces();
+                    if (ComparePieceArray(firstPieces, secondPieces))
+                    {
+                        repeatingBoards++;
+                        if (repeatingBoards == 3)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool ComparePieceArray(Piece[,] first, Piece[,] second)
+        {
+            int i = 0;
+
+            while (i < second.GetLength(0))
+            {
+                int j = 0;
+                while (j < second.GetLength(1))
+                {
+                    Piece piece1 = first[i, j];
+                    Piece piece2 = second[i, j];
+                    if (!piece1.Equals(piece2))
+                    {
+                        return false;
+                    }
+
+                    j++;
+                }
+
+                i++;
+            }
+
+            return true;
+        }
+
         public Log retrieveLastMove()
         {
             return log.RetrieveLastLog();
@@ -303,7 +383,7 @@ namespace ChessRewrite2
         public Board Clone()
         {
             Piece[,] piecesCopy = Piece.ClonePieceArray(pieces);
-            return new Board(piecesCopy, log, enpassant, castling);
+            return new Board(piecesCopy, log.Clone(), enpassant, castling);
         }
 
         public bool CanAnyPieceMove(bool isWhitesTurn)
@@ -623,7 +703,7 @@ namespace ChessRewrite2
                 },
                 {
                     new Rook(false), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
-                    new Knight(true), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
+                    new Knight(true), new Queen(false), new EmptyPiece(), new EmptyPiece(),
                 },
                 {
                     new EmptyPiece(), new EmptyPiece(), new EmptyPiece(), new EmptyPiece(),
@@ -868,7 +948,7 @@ namespace ChessRewrite2
         {
             Piece startingPiece = pieces[move.getStarting().GetRank(), move.getStarting().GetFile()];
             Piece endingPiece = pieces[move.getEnding().GetRank(), move.getEnding().GetFile()];
-            
+
             if (startingPiece is EmptyPiece || startingPiece.IsWhite() != isWhitesTurn)
             {
                 return false;
@@ -933,6 +1013,16 @@ namespace ChessRewrite2
         public override Piece Clone()
         {
             return new EmptyPiece();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is EmptyPiece)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -1027,6 +1117,16 @@ namespace ChessRewrite2
         {
             return isWhite ? "WP" : "BP";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Pawn)
+            {
+                return ((Pawn)obj).isWhite == this.IsWhite() && ((Pawn)obj).firstMove == this.firstMove;
+            }
+
+            return false;
+        }
     }
 
     class Rook : Piece
@@ -1115,6 +1215,16 @@ namespace ChessRewrite2
         {
             return isWhite ? "WR" : "BR";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Rook)
+            {
+                return ((Rook)obj).isWhite == this.IsWhite() && ((Rook)obj).firstMove == this.firstMove;
+            }
+
+            return false;
+        }
     }
 
     class Bishop : Piece
@@ -1188,6 +1298,16 @@ namespace ChessRewrite2
         {
             return isWhite ? "WB" : "BB";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Bishop)
+            {
+                return ((Bishop)obj).isWhite == this.IsWhite();
+            }
+
+            return false;
+        }
     }
 
     class Knight : Piece
@@ -1232,6 +1352,16 @@ namespace ChessRewrite2
         {
             return isWhite ? "WN" : "BN";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Knight)
+            {
+                return ((Knight)obj).isWhite == this.IsWhite();
+            }
+
+            return false;
+        }
     }
 
     class Queen : Piece
@@ -1264,6 +1394,16 @@ namespace ChessRewrite2
         public override string ToString()
         {
             return isWhite ? "WQ" : "BQ";
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Queen)
+            {
+                return ((Queen)obj).isWhite == this.IsWhite();
+            }
+
+            return false;
         }
     }
 
@@ -1327,6 +1467,16 @@ namespace ChessRewrite2
         public override string ToString()
         {
             return isWhite ? "WK" : "BK";
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is King)
+            {
+                return ((King)obj).isWhite == this.IsWhite() && ((King)obj).firstMove == this.firstMove;
+            }
+
+            return false;
         }
     }
 }
